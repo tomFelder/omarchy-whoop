@@ -15,7 +15,7 @@
     "description": "Heart rate and connection status, with battery in the tooltip",
     "category": "Health",
     "allowMultiple": false,
-    "defaultSection": "right"
+    "defaultSection": "center"
   },
   "author": "tomFelder",
   "license": "MIT",

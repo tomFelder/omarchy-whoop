@@ -62,9 +62,9 @@ if args.uninstall:
     for section, entries in layout.items():
         layout[section] = [e for e in entries if e.get('id') != 'community.whoop']
 elif not present:
-    right = layout.setdefault('right', [])
-    index = next((i for i, entry in enumerate(right) if entry.get('id') == 'omarchy.bluetooth'), len(right))
-    right.insert(index, {'id': 'community.whoop'})
+    center = layout.setdefault('center', [])
+    index = next((i + 1 for i, entry in enumerate(center) if entry.get('id') == 'omarchy.clock'), len(center))
+    center.insert(index, {'id': 'community.whoop'})
 temp = shell.with_suffix('.whoop.tmp')
 temp.write_text(json.dumps(settings, indent=2) + '\n')
 temp.replace(shell)

@@ -37,7 +37,7 @@ Run as your normal desktop user, without sudo. The installer:
 - Creates an isolated Python environment under `~/.local/share/omarchy-whoop`.
 - Installs `community.whoop` under `~/.config/omarchy/plugins`.
 - Enables `omarchy-whoop.service` for your user session.
-- Backs up `~/.config/omarchy/shell.json`, then adds the widget beside Bluetooth.
+- Backs up `~/.config/omarchy/shell.json`, then adds the widget immediately after the clock in the centre.
 
 The bar hot-reloads. To update, pull this repository and rerun `python install.py`.
 The existing device selection and widget position are retained.
