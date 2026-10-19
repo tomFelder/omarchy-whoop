@@ -6,10 +6,12 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--address', help='Bluetooth address (kept outside the repository)')
 parser.add_argument('--uninstall', action='store_true')
+parser.add_argument('--yes', action='store_true', help='Accept the displayed installation/removal changes')
 args = parser.parse_args()
 source = Path(__file__).resolve().parent
 home = Path.home()
@@ -18,11 +20,22 @@ plugin = home / '.config/omarchy/plugins/community.whoop'
 shell = home / '.config/omarchy/shell.json'
 unit = home / '.config/systemd/user/omarchy-whoop.service'
 config = home / '.config/omarchy-whoop/config.json'
-settings = json.loads(shell.read_text())
+settings = json.loads(shell.read_text()) if shell.exists() else {}
 backup = shell.with_name('shell.json.bak-whoop-' + datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
 
 def call(*cmd):
     subprocess.run(cmd, check=True)
+
+action = 'Stop and disable the reader, remove its user service and bar entry' if args.uninstall else (
+    'Install pinned Python dependencies with uv, enable the reader at login, and add the bar widget')
+print(action + '. Existing bar settings will be backed up.')
+if not args.yes:
+    if not sys.stdin.isatty():
+        raise SystemExit('Run in a terminal to confirm, or pass --yes to accept these changes.')
+    if input('Continue? [y/N] ').strip().lower() not in ('y', 'yes'):
+        raise SystemExit('Cancelled; no changes made.')
+if not args.uninstall and not shutil.which('uv'):
+    raise SystemExit('uv is required. Install it first, then rerun this command.')
 
 if args.uninstall:
     subprocess.run(['systemctl', '--user', 'disable', '--now', 'omarchy-whoop.service'], check=False)
@@ -47,14 +60,18 @@ else:
                     'Restart=on-failure\nRestartSec=5\nUMask=0077\n'
                     'RuntimeDirectory=omarchy-whoop\nRuntimeDirectoryMode=0700\n'
                     '[Install]\nWantedBy=default.target\n')
-    for name in ('BarWidget.qml', 'manifest.json'):
-        shutil.copy2(source / name, plugin / name)
+    for name in ('BarWidget.qml', 'manifest.json', 'install.py', 'whoop.py', 'requirements.txt', 'README.md', 'LICENSE'):
+        origin, destination = source / name, plugin / name
+        if origin.resolve() != destination.resolve():
+            shutil.copy2(origin, destination)
     call('systemctl', '--user', 'daemon-reload')
     call('systemctl', '--user', 'enable', 'omarchy-whoop.service')
     call('systemctl', '--user', 'restart', 'omarchy-whoop.service')
 
-settings = json.loads(shell.read_text())
-shutil.copy2(shell, backup)
+settings = json.loads(shell.read_text()) if shell.exists() else {}
+shell.parent.mkdir(parents=True, exist_ok=True)
+if shell.exists():
+    shutil.copy2(shell, backup)
 layout = settings.setdefault('bar', {}).setdefault('layout', {})
 # Keep an existing widget's position on updates.
 present = any(entry.get('id') == 'community.whoop' for entries in layout.values() for entry in entries)
@@ -69,8 +86,14 @@ temp = shell.with_suffix('.whoop.tmp')
 temp.write_text(json.dumps(settings, indent=2) + '\n')
 temp.replace(shell)
 if args.uninstall:
-    if plugin.exists():
-        shutil.rmtree(plugin)
+    if (plugin / '.git').exists():
+        print('Git-managed plugin retained. Remove it with: omarchy plugin remove community.whoop')
+    elif plugin.exists():
+        for name in ('BarWidget.qml', 'manifest.json', 'install.py', 'whoop.py', 'requirements.txt', 'README.md', 'LICENSE'):
+            (plugin / name).unlink(missing_ok=True)
+        # Preserve any unrelated files or local additions.
+        if not any(plugin.iterdir()):
+            plugin.rmdir()
     unit.unlink(missing_ok=True)
     call('systemctl', '--user', 'daemon-reload')
     print('Removed widget and service. Reader and device config retained in your home directory.')

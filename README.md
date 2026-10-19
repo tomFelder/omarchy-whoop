@@ -19,7 +19,25 @@ monitor. Theme colours and bar orientation follow Omarchy.
 Tested with a connected WHOOP on Omarchy/BlueZ, Python 3.13, and Bleak 3.0.2.
 Other standard Bluetooth Heart Rate Service bands may work but are untested.
 
-## Install
+## Install from the marketplace / Omarchy CLI
+
+```sh
+omarchy plugin add https://github.com/tomFelder/omarchy-whoop.git --enable
+```
+
+**One-time reader setup is required.** Click the heart in the bar to open the
+setup prompt in your terminal, or run:
+
+```sh
+python ~/.config/omarchy/plugins/community.whoop/install.py
+```
+
+The installer describes its changes and asks for confirmation. It downloads
+pinned dependencies and enables a user service. Nothing is installed or started
+just by loading the widget. CLI automation may pass `--yes` to explicitly accept
+the same changes. `xdg-terminal-exec` is needed only for click-to-setup.
+
+## Install from a separate checkout
 
 ```sh
 git clone https://github.com/tomFelder/omarchy-whoop.git
@@ -39,8 +57,25 @@ Run as your normal desktop user, without sudo. The installer:
 - Enables `omarchy-whoop.service` for your user session.
 - Backs up `~/.config/omarchy/shell.json`, then adds the widget immediately after the clock in the centre.
 
-The bar hot-reloads. To update, pull this repository and rerun `python install.py`.
-The existing device selection and widget position are retained.
+The bar hot-reloads. Existing device selection and widget position are retained.
+
+## Startup and updates
+
+The reader is enabled under the systemd user `default.target`, so it starts
+when you log in. The widget is saved in Omarchy's bar layout and loads with the
+shell. The band may be absent or Bluetooth off at login: the reader keeps retrying.
+No root service or user lingering is required. Verify with:
+
+```sh
+systemctl --user is-enabled omarchy-whoop.service
+systemctl --user is-active omarchy-whoop.service
+```
+
+For a marketplace install, run `omarchy plugin update community.whoop`, then
+rerun its `install.py` to update the separately installed reader and dependencies.
+For a separate checkout, pull this repository and rerun `python install.py`.
+Existing placement is retained; new standalone installs default beside the clock.
+Marketplace placement follows the selection made when enabling the widget.
 
 ## How it works
 
@@ -83,11 +118,16 @@ default `WHOOP`). A configured address takes precedence.
 ## Uninstall
 
 ```sh
-python install.py --uninstall
+python ~/.config/omarchy/plugins/community.whoop/install.py --uninstall
 ```
 
-Removes the widget from the bar, removes its plugin and systemd unit, and stops
-and disables the reader. It backs up the bar config and preserves unrelated
+Stops and disables the reader and removes its user service and bar entry.
+For a git-managed marketplace install, the checkout is preserved; finish with
+`omarchy plugin remove community.whoop`. For a standalone install, only the
+plugin's own installed files are removed. Run the reader uninstall **before**
+removing the marketplace plugin: Omarchy's remove command cannot stop external
+user services. If the plugin was already removed, run `install.py --uninstall`
+from a fresh checkout of this repository. It backs up the bar config and preserves unrelated
 widgets. The isolated runtime installation and device config remain in
 `~/.local/share/omarchy-whoop` and `~/.config/omarchy-whoop` for optional manual
 removal.
@@ -95,11 +135,13 @@ removal.
 ## Development
 
 ```sh
-python -B -m unittest -v test_whoop.py
+python -B -m unittest -v
 ```
 
 Tests cover packet decoding, contact flags, malformed packets, and private atomic
-state replacement. Hardware verification is separate and requires a real band.
+state replacement, plus isolated marketplace/standalone install, update, consent,
+startup configuration, and uninstall checks. Hardware verification is separate
+and requires a real band.
 Bluetooth access uses [Bleak](https://bleak.readthedocs.io/en/latest/api/client.html)
 and BlueZ's D-Bus ObjectManager. The known-device adapter relies on Bleak's BlueZ
 device details structure; dependency versions are pinned for reproducibility.

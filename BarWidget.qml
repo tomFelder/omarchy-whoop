@@ -11,6 +11,7 @@ BarWidget {
     readonly property bool live: state.status === "live" && state.bpm > 0
         && now - (state.measured_at || 0) < 15
     readonly property string statusText: {
+        if (!state.status) return "Reader not running — click to set up startup"
         if (live) return "Live heart rate"
         if (state.status === "no_contact") return "Check band contact"
         if (state.status === "connecting") return "Connecting to WHOOP…"
@@ -47,7 +48,13 @@ BarWidget {
         text: root.vertical ? "♥\n" + (root.live ? root.state.bpm : "—")
                             : "♥ " + (root.live ? root.state.bpm + " bpm" : "—")
         dimmed: !root.live
-        pressable: false
+        pressable: !root.state.status
+        onPressed: function(button) {
+            if (!root.state.status && button === Qt.LeftButton) {
+                var installer = decodeURIComponent(Qt.resolvedUrl("install.py").toString().replace(/^file:\/\//, ""))
+                Quickshell.execDetached(["xdg-terminal-exec", "python", installer])
+            }
+        }
         tooltipText: "WHOOP · " + root.statusText
             + (root.state.battery !== null && root.state.battery !== undefined
                ? "\nBand battery: " + root.state.battery + "%" : "")

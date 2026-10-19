@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "community.whoop",
   "name": "WHOOP Heart Rate",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Live Bluetooth heart rate in the Omarchy bar",
   "kinds": [
     "bar-widget"
