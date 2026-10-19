@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "community.whoop",
+  "name": "WHOOP Heart Rate",
+  "version": "0.1.0",
+  "description": "Live Bluetooth heart rate in the Omarchy bar",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "WHOOP Heart Rate",
+    "description": "Heart rate and connection status, with battery in the tooltip",
+    "category": "Health",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  },
+  "author": "tomFelder",
+  "license": "MIT",
+  "homepage": "https://github.com/tomFelder/omarchy-whoop"
+}
